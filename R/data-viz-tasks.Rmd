@@ -1,0 +1,106 @@
+---
+title: "Data Viz Tasks"
+author: "Desik Somasundaram"
+date: "8/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# General use packages:
+library(tidyverse)
+library(here)
+library(janitor)
+
+library(patchwork)
+library(ggrepel)
+library(gghighlight)
+library(paletteer)
+library(ggExtra)
+library(ggbeeswarm)
+library(gapminder)
+library(sf)
+library(grid)
+library(ggpubr)
+```
+
+## Read in data
+
+```{r}
+space_launches <- read_csv(here("data", "space_launches.csv"))
+sf_gg_data <- read_csv(here("data", "San_Francisco_Communitywide_Greenhouse_Gas_Inventory.csv"))
+```
+
+```{r}
+patrick <- here("krusty_crew.jpg")
+patrickbg <- jpeg::readJPEG(patrick)
+```
+
+## Task 1: Do your data viz worst
+
+```{r}
+ggplot(data = space_launches, aes(x = launch_date, y = type)) + annotation_custom(rasterGrob(patrickbg, 
+                               width = unit(1,"npc"), 
+                               height = unit(1,"npc")), 
+                    -Inf, Inf, -Inf, Inf) +
+  labs(title = "I'm a Wumbo", subtitle = "by Mr.Dr.Professor Partick Star") +
+  geom_point(aes(color = agency_type), shape = 11) +
+  facet_wrap(~agency_type) +  
+  theme(panel.grid.major.y = element_line(color = "orange"),
+        panel.grid.major.x = element_blank(),
+        axis.text.x = element_text(color = "blue"),
+        axis.text.y = element_text(color = "cyan"),
+        axis.title.x = element_text(color = "green"),
+        axis.title.y = element_text(color = "goldenrod"),
+        text = element_text(size = 10, family="serif"),
+        plot.background = element_rect(fill = "pink"))
+  
+  
+```
+
+
+
+## Task 2: Wrangling practice with SF Greenhouse Data
+
+```{r}
+summary_sector <- sf_gg_data %>% 
+  clean_names() %>% 
+  group_by(sector_general) %>% 
+  summarize(total = sum(emissions_mt_co2e, na.rm = TRUE))
+
+summary_yr_comm <- sf_gg_data %>% 
+  clean_names() %>% 
+  group_by(calendar_year, commodity_type) %>% 
+  summarize(total = sum(emissions_mt_co2e, na.rm = TRUE))
+
+sf_gg_subset <- sf_gg_data %>%
+  clean_names() %>% 
+  filter(calendar_year >= 2005) %>% 
+  filter(str_detect(sector_detail2,"PG&E")) %>% 
+  select(calendar_year, sector_detail2, emissions_mt_co2e)
+```
+## Task 3: Do your data viz best
+
+```{r}
+
+summary_yr_comm_gen <- sf_gg_data %>% 
+  clean_names() %>% 
+  group_by(calendar_year, sector_general) %>% 
+  summarize(total_in_mill = (sum(emissions_mt_co2e, na.rm = TRUE)/1000000))
+
+
+
+ggplot(summary_yr_comm_gen, aes(x = calendar_year, y = total_in_mill)) + 
+   geom_line(aes(color = sector_general), size = 1.1, show.legend = FALSE) +
+  labs(title = "SF Total Greenhouse Gas Emissions by Sector from 1990 to 2019", x = "Year", y = "Total CO2 Equivalent Emissions (Millions of Metric Tons)") +
+  facet_wrap(~sector_general, ncol = 2) +
+   theme(panel.grid.major.y = element_line(color = "gray"),
+        panel.grid.major.x = element_blank(),
+        axis.text.x = element_text(color = "black"),
+        axis.text.y = element_text(color = "black"),
+        axis.title.x = element_text(color = "black"),
+        axis.title.y = element_text(color = "black"),
+        text = element_text(size = 12, family="serif"),
+        plot.background = element_rect(fill = "white"))
+```
+
